@@ -3,10 +3,7 @@
 	import { encodeWav } from '$lib/audio/wav';
 	import SeoHead from '$lib/components/SeoHead.svelte';
 	import { organizationJsonLd, softwareApplicationJsonLd, websiteJsonLd } from '$lib/seo';
-	import { track } from '@vercel/analytics/sveltekit';
-
-	type EventProps = Record<string, string | number | boolean | null>;
-	const trackEvent = (name: string, props?: EventProps) => track(name, props);
+	import { trackEvent, truncate } from '$lib/track';
 
 	type Stage = 'idle' | 'decoding' | 'processing' | 'ready' | 'error';
 
@@ -105,12 +102,16 @@
 				duration_sec: Math.round(durationSec),
 				elapsed_ms: Math.round(elapsedMs),
 				noise_scale: noiseScale,
+				dry_wet: dryWet,
+				adaptive,
 				vocal_mode: vocalMode
 			});
 		} catch (err) {
 			errorMsg = err instanceof Error ? err.message : String(err);
 			trackEvent('protect_failed', {
-				error_kind: stage === 'processing' ? 'process' : 'decode'
+				error_kind: stage === 'processing' ? 'process' : 'decode',
+				error_name: err instanceof Error ? err.name : 'Unknown',
+				error_message: truncate(err instanceof Error ? err.message : String(err), 200)
 			});
 			stage = 'error';
 		}
@@ -131,6 +132,38 @@
 
 	const busy = $derived(stage === 'decoding' || stage === 'processing');
 	const pct = $derived(Math.round(progress * 100));
+
+	let dragSeen = false;
+	let originalPlayed = false;
+	let protectedPlayed = false;
+
+	function onDragOver(e: DragEvent) {
+		e.preventDefault();
+		dragging = true;
+		if (!dragSeen) {
+			dragSeen = true;
+			trackEvent('drag_started');
+		}
+	}
+
+	function onOriginalPlay() {
+		if (originalPlayed) return;
+		originalPlayed = true;
+		trackEvent('audio_played', { source: 'original', duration_sec: Math.round(durationSec) });
+	}
+
+	function onProtectedPlay() {
+		if (protectedPlayed) return;
+		protectedPlayed = true;
+		trackEvent('audio_played', { source: 'protected', duration_sec: Math.round(durationSec) });
+	}
+
+	function onHarmonydaggerClick() {
+		trackEvent('outbound_link_clicked', {
+			url: 'https://github.com/jaschadub/harmonydagger',
+			label: 'harmonydagger'
+		});
+	}
 </script>
 
 <SeoHead path="/" jsonLd={[organizationJsonLd, websiteJsonLd, softwareApplicationJsonLd]} />
@@ -194,10 +227,7 @@
 		class="relative animate-rise border border-line bg-[#0f0f0e]/55 backdrop-blur-sm [animation-delay:0.25s] {dragging
 			? '!border-ink !bg-ink/5'
 			: ''} {file && !dragging ? '!border-ink/60' : ''}"
-		ondragover={(e) => {
-			e.preventDefault();
-			dragging = true;
-		}}
+		ondragover={onDragOver}
 		ondragleave={() => (dragging = false)}
 		ondrop={onDrop}
 		aria-label="Upload audio file"
@@ -336,7 +366,7 @@
 					<span class="inline-block h-px w-6 bg-ink"></span>
 					<span class="text-[0.72rem] tracking-[0.32em] uppercase">original</span>
 				</div>
-				<audio controls src={originalUrl}></audio>
+				<audio controls src={originalUrl} onplay={onOriginalPlay}></audio>
 			</div>
 			<div class="flex-1">
 				<div class="mb-3.5 flex items-center gap-3">
@@ -344,7 +374,7 @@
 					<span class="text-[0.72rem] tracking-[0.32em] uppercase">protected</span>
 				</div>
 				{#if protectedUrl}
-					<audio controls src={protectedUrl}></audio>
+					<audio controls src={protectedUrl} onplay={onProtectedPlay}></audio>
 				{:else}
 					<p class="text-[0.78rem] tracking-wide">awaiting render —</p>
 				{/if}
@@ -386,6 +416,7 @@
 					href="https://github.com/jaschadub/harmonydagger"
 					target="_blank"
 					rel="noreferrer"
+					onclick={onHarmonydaggerClick}
 					class="border-b border-line transition-colors hover:border-ink"
 				>
 					harmonydagger
