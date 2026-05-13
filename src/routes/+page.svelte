@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { decodeWavFile, protectInWorker } from '$lib/audio/processor';
 	import { encodeWav } from '$lib/audio/wav';
+	import SeoHead from '$lib/components/SeoHead.svelte';
+	import { organizationJsonLd, softwareApplicationJsonLd, websiteJsonLd } from '$lib/seo';
 	import { track } from '@vercel/analytics/sveltekit';
 
 	type EventProps = Record<string, string | number | boolean | null>;
@@ -46,7 +48,7 @@
 		const ext = dot >= 0 ? f.name.slice(dot + 1).toLowerCase() : 'unknown';
 		trackEvent('file_selected', {
 			size_mb: Math.round((f.size / (1024 * 1024)) * 100) / 100,
-			ext,
+			ext
 		});
 	}
 
@@ -72,7 +74,7 @@
 			noise_scale: noiseScale,
 			dry_wet: dryWet,
 			adaptive,
-			vocal_mode: vocalMode,
+			vocal_mode: vocalMode
 		});
 		const t0 = performance.now();
 		try {
@@ -88,7 +90,7 @@
 				{ noiseScale, dryWet, adaptiveScaling: adaptive, vocalMode },
 				(frac) => {
 					progress = frac;
-				},
+				}
 			);
 
 			const wavBuf = encodeWav(result.channels, result.sampleRate);
@@ -103,12 +105,12 @@
 				duration_sec: Math.round(durationSec),
 				elapsed_ms: Math.round(elapsedMs),
 				noise_scale: noiseScale,
-				vocal_mode: vocalMode,
+				vocal_mode: vocalMode
 			});
 		} catch (err) {
 			errorMsg = err instanceof Error ? err.message : String(err);
 			trackEvent('protect_failed', {
-				error_kind: stage === 'processing' ? 'process' : 'decode',
+				error_kind: stage === 'processing' ? 'process' : 'decode'
 			});
 			stage = 'error';
 		}
@@ -118,7 +120,7 @@
 		if (!protectedBlob || !file || !protectedUrl) return;
 		trackEvent('download_clicked', {
 			duration_sec: Math.round(durationSec),
-			channels: channelCount,
+			channels: channelCount
 		});
 		const a = document.createElement('a');
 		a.href = protectedUrl;
@@ -131,21 +133,18 @@
 	const pct = $derived(Math.round(progress * 100));
 </script>
 
-<svelte:head>
-	<title>music † dagger</title>
-	<meta
-		name="description"
-		content="Imperceptible psychoacoustic noise for musicians who refuse to feed the machines."
-	/>
-</svelte:head>
+<SeoHead path="/" jsonLd={[organizationJsonLd, websiteJsonLd, softwareApplicationJsonLd]} />
 
 <main
 	class="relative z-10 mx-auto flex max-w-3xl flex-col gap-14 px-8 pt-14 pb-24 md:px-14 md:pt-20 md:pb-32"
 >
 	<header
-		class="animate-rise flex flex-wrap items-baseline justify-between gap-4 [animation-delay:0.05s]"
+		class="flex animate-rise flex-wrap items-baseline justify-between gap-4 [animation-delay:0.05s]"
 	>
-		<div class="flex items-baseline gap-3 text-5xl leading-none md:text-6xl">
+		<h1
+			class="flex items-baseline gap-3 text-5xl leading-none font-normal md:text-6xl"
+			aria-label="Music Dagger"
+		>
 			<span>Music</span>
 			<svg
 				viewBox="0 0 16 16"
@@ -173,26 +172,26 @@
 				<rect x="1" y="15" width="2" height="1" />
 			</svg>
 			<span>Dagger</span>
-		</div>
+		</h1>
 		<div class="flex items-center gap-2.5 text-[0.7rem] tracking-[0.25em] uppercase">
-			<span class="animate-blink inline-block h-1.5 w-1.5 bg-ink"></span>
+			<span class="inline-block h-1.5 w-1.5 animate-blink bg-ink"></span>
 			<span>v0.1 · blackflag</span>
 		</div>
 	</header>
 
-	<section class="animate-rise max-w-xl [animation-delay:0.15s]">
+	<section class="max-w-xl animate-rise [animation-delay:0.15s]">
 		<p class="mb-3 text-[0.72rem] tracking-[0.22em] uppercase">
 			— adversarial noise for those who refuse to feed the machines.
 		</p>
 		<p class="text-base leading-relaxed">
-			Upload a track. We bury imperceptible psychoacoustic noise inside it — calibrated to
-			your music, hidden under the masking threshold of human hearing, loud enough to poison
-			a generative model's training signal. Nothing leaves this browser.
+			Upload a track. We bury imperceptible psychoacoustic noise inside it — calibrated to your
+			music, hidden under the masking threshold of human hearing, loud enough to poison a generative
+			model's training signal. Nothing leaves this browser.
 		</p>
 	</section>
 
 	<section
-		class="animate-rise relative border border-line bg-[#0f0f0e]/55 backdrop-blur-sm [animation-delay:0.25s] {dragging
+		class="relative animate-rise border border-line bg-[#0f0f0e]/55 backdrop-blur-sm [animation-delay:0.25s] {dragging
 			? '!border-ink !bg-ink/5'
 			: ''} {file && !dragging ? '!border-ink/60' : ''}"
 		ondragover={(e) => {
@@ -203,12 +202,22 @@
 		ondrop={onDrop}
 		aria-label="Upload audio file"
 	>
-		<span class="pointer-events-none absolute -top-px -left-px h-3.5 w-3.5 border-t border-l border-ink"></span>
-		<span class="pointer-events-none absolute -top-px -right-px h-3.5 w-3.5 border-t border-r border-ink"></span>
-		<span class="pointer-events-none absolute -bottom-px -left-px h-3.5 w-3.5 border-b border-l border-ink"></span>
-		<span class="pointer-events-none absolute -right-px -bottom-px h-3.5 w-3.5 border-r border-b border-ink"></span>
+		<span
+			class="pointer-events-none absolute -top-px -left-px h-3.5 w-3.5 border-t border-l border-ink"
+		></span>
+		<span
+			class="pointer-events-none absolute -top-px -right-px h-3.5 w-3.5 border-t border-r border-ink"
+		></span>
+		<span
+			class="pointer-events-none absolute -bottom-px -left-px h-3.5 w-3.5 border-b border-l border-ink"
+		></span>
+		<span
+			class="pointer-events-none absolute -right-px -bottom-px h-3.5 w-3.5 border-r border-b border-ink"
+		></span>
 
-		<label class="relative flex cursor-pointer flex-col items-center justify-center gap-3.5 px-6 py-16 text-center">
+		<label
+			class="relative flex cursor-pointer flex-col items-center justify-center gap-3.5 px-6 py-16 text-center"
+		>
 			<input
 				type="file"
 				accept=".wav,audio/wav,audio/wave,audio/x-wav,audio/mpeg,audio/flac,audio/ogg"
@@ -227,7 +236,7 @@
 		</label>
 	</section>
 
-	<section class="animate-rise flex flex-col gap-9 [animation-delay:0.35s]">
+	<section class="flex animate-rise flex-col gap-9 [animation-delay:0.35s]">
 		<div>
 			<div class="mb-2.5 flex items-baseline justify-between">
 				<span class="text-[0.7rem] tracking-[0.28em] uppercase">Strength</span>
@@ -263,7 +272,9 @@
 		</div>
 
 		<div class="flex flex-wrap gap-7">
-			<label class="inline-flex cursor-pointer items-center gap-3 text-[0.78rem] tracking-[0.22em] uppercase">
+			<label
+				class="inline-flex cursor-pointer items-center gap-3 text-[0.78rem] tracking-[0.22em] uppercase"
+			>
 				<input type="checkbox" bind:checked={adaptive} class="peer sr-only" />
 				<span
 					aria-hidden="true"
@@ -271,7 +282,9 @@
 				></span>
 				<span>Adaptive scaling</span>
 			</label>
-			<label class="inline-flex cursor-pointer items-center gap-3 text-[0.78rem] tracking-[0.22em] uppercase">
+			<label
+				class="inline-flex cursor-pointer items-center gap-3 text-[0.78rem] tracking-[0.22em] uppercase"
+			>
 				<input type="checkbox" bind:checked={vocalMode} class="peer sr-only" />
 				<span
 					aria-hidden="true"
@@ -282,7 +295,7 @@
 		</div>
 	</section>
 
-	<section class="animate-rise flex flex-wrap items-center gap-7 [animation-delay:0.45s]">
+	<section class="flex animate-rise flex-wrap items-center gap-7 [animation-delay:0.45s]">
 		<button
 			type="button"
 			onclick={runProtect}
@@ -317,7 +330,7 @@
 	{/if}
 
 	{#if originalUrl}
-		<section class="animate-rise flex flex-col gap-9 md:flex-row md:gap-8">
+		<section class="flex animate-rise flex-col gap-9 md:flex-row md:gap-8">
 			<div class="flex-1">
 				<div class="mb-3.5 flex items-center gap-3">
 					<span class="inline-block h-px w-6 bg-ink"></span>
@@ -341,7 +354,7 @@
 
 	{#if stage === 'ready'}
 		<section
-			class="animate-rise flex flex-wrap items-center justify-between gap-5 border-y border-line py-5"
+			class="flex animate-rise flex-wrap items-center justify-between gap-5 border-y border-line py-5"
 		>
 			<div class="flex flex-wrap gap-2.5 text-[0.72rem] tracking-[0.2em] uppercase">
 				<span>{channelCount}ch</span>
